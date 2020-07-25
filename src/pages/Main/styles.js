@@ -8,7 +8,15 @@ export const Form = styled.form`
 
   input {
     flex: 1;
-    border: 1px solid #eeeeee;
+    ${(props) =>
+      props.hasError
+        ? css`
+            border: 1px solid #c80808;
+          `
+        : css`
+            border: 1px solid #eeeeee;
+          `}
+
     padding: 10px 15px;
     border-radius: 4px;
     font-size: 16px;
@@ -71,7 +79,11 @@ export const List = styled.ul`
 `;
 
 export const CustomLink = styled(Link)`
-  color: '#7159C1';
+  color: #7159c1;
   font-weight: bold;
   text-decoration: none;
+`;
+
+export const ErrorMessage = styled.small`
+  color: #c80808;
 `;

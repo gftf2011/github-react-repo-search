@@ -3,8 +3,16 @@ import { FaGithubAlt, FaPlus, FaSpinner } from 'react-icons/fa';
 
 import api from '../../services/api';
 
-import { Form, SubmitButton, List, CustomLink as Link } from './styles';
+import {
+  Form,
+  SubmitButton,
+  List,
+  CustomLink as Link,
+  ErrorMessage,
+} from './styles';
 import Container from '../../components/Container';
+
+import DuplicatedRepoError from '../../error/DuplicatedRepo';
 
 export default class Main extends Component {
   constructor() {
@@ -14,6 +22,10 @@ export default class Main extends Component {
       newRepo: '',
       loading: false,
       repositories: [],
+      error: {
+        hasError: false,
+        message: '',
+      },
     };
   }
 
@@ -34,7 +46,10 @@ export default class Main extends Component {
   }
 
   handleInputChange = (event) => {
-    this.setState({ newRepo: event.target.value });
+    this.setState({
+      newRepo: event.target.value,
+      error: { hassError: false, message: '' },
+    });
   };
 
   handleSubmit = async (event) => {
@@ -47,6 +62,14 @@ export default class Main extends Component {
 
       const response = await api.get(`/repos/${newRepo}`);
 
+      const repositoryExists = repositories.find(
+        (repository) => repository === response.data.full_name
+      );
+
+      if (repositoryExists) {
+        throw new DuplicatedRepoError();
+      }
+
       const data = {
         name: response.data.full_name,
       };
@@ -56,14 +79,22 @@ export default class Main extends Component {
         repositories: [...repositories, data.name],
       });
     } catch (err) {
-      console.log(err.response);
+      if (err instanceof DuplicatedRepoError) {
+        this.setState({
+          error: { hasError: true, message: err.message },
+        });
+      } else {
+        this.setState({
+          error: { hasError: true, message: 'Repositório não existe!' },
+        });
+      }
     } finally {
       this.setState({ loading: false });
     }
   };
 
   render() {
-    const { newRepo, repositories, loading } = this.state;
+    const { newRepo, repositories, loading, error } = this.state;
 
     return (
       <Container>
@@ -72,7 +103,7 @@ export default class Main extends Component {
           Repositórios
         </h1>
 
-        <Form onSubmit={this.handleSubmit}>
+        <Form onSubmit={this.handleSubmit} hasError={error.hasError}>
           <input
             type="text"
             placeholder="Adicionar repositório"
@@ -88,6 +119,7 @@ export default class Main extends Component {
             )}
           </SubmitButton>
         </Form>
+        {error.hasError && <ErrorMessage>{error.message}</ErrorMessage>}
         <List>
           {repositories.map((repository, index) => (
             <li key={index}>
