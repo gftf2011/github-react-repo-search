@@ -13,6 +13,7 @@ import {
   IssuesList,
 } from './styles';
 import Container from '../../components/Container';
+import Pagination from '../../components/Pagination';
 
 import api from '../../services/api';
 
@@ -24,35 +25,72 @@ export default class Repository extends Component {
       repoName: '',
       repository: {},
       issues: [],
+      issuesNumber: 0,
       loading: true,
+      page: 1,
+      offset: 5,
     };
   }
 
   async componentDidMount() {
+    const { page, offset } = this.state;
     const { match } = this.props;
 
-    const repoName = decodeURIComponent(match.params.repository);
+    const { repository } = match.params;
 
-    const [repository, issues] = await Promise.all([
+    const repoName = decodeURIComponent(repository);
+
+    const [repo, issuesNumber, issues] = await Promise.all([
       api.get(`/repos/${repoName}`),
-      api.get(`/repos/${repoName}/issues?state=all`, {
+      api.get(`/repos/${repoName}/issues`),
+      api.get(`/repos/${repoName}/issues`, {
         params: {
-          state: 'open',
-          per_page: 5,
+          state: 'all',
+          page,
+          per_page: offset,
         },
       }),
     ]);
 
     this.setState({
       repoName,
-      repository: repository.data,
+      repository: repo.data,
       issues: issues.data,
+      issuesNumber: issuesNumber.data.length,
       loading: false,
     });
   }
 
+  loadder = async (page) => {
+    this.setState({ page, loading: true, issues: [] });
+
+    const { offset, repoName } = this.state;
+
+    const issues = await api.get(`/repos/${repoName}/issues`, {
+      params: {
+        state: 'all',
+        page,
+        per_page: offset,
+      },
+    });
+
+    this.setState({ loading: false, issues: issues.data });
+  };
+
+  handlePageChange = async (page) => {
+    await this.loadder(page);
+  };
+
   render() {
-    const { repoName, repository, issues, loading } = this.state;
+    const {
+      repoName,
+      repository,
+      issues,
+      issuesNumber,
+      loading,
+      page,
+      offset,
+    } = this.state;
 
     if (loading) {
       return (
@@ -104,6 +142,12 @@ export default class Repository extends Component {
             </li>
           ))}
         </IssuesList>
+        <Pagination
+          page={page}
+          totalItems={issuesNumber}
+          offset={offset}
+          func={this.handlePageChange}
+        />
       </Container>
     );
   }
@@ -112,6 +156,7 @@ export default class Repository extends Component {
 Repository.propTypes = {
   match: PropTypes.shape({
     params: PropTypes.shape({
+      page: PropTypes.number,
       repository: PropTypes.string,
     }),
   }).isRequired,
