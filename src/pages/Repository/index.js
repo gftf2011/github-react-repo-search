@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { FaSpinner, FaGithubAlt, FaSignOutAlt, FaLink } from 'react-icons/fa';
 
 import IssueState from './components/IssueState';
+import IssuesFilter from './components/IssuesFilter';
 
 import {
   Loading,
@@ -25,6 +26,7 @@ export default class Repository extends Component {
       repoName: '',
       repository: {},
       issues: [],
+      issueState: 'all',
       issuesNumber: 0,
       loading: true,
       page: 1,
@@ -33,7 +35,7 @@ export default class Repository extends Component {
   }
 
   async componentDidMount() {
-    const { page, offset } = this.state;
+    const { page, offset, issuesState } = this.state;
     const { match } = this.props;
 
     const { repository } = match.params;
@@ -45,7 +47,8 @@ export default class Repository extends Component {
       api.get(`/repos/${repoName}/issues`),
       api.get(`/repos/${repoName}/issues`, {
         params: {
-          state: 'all',
+          markdown: true,
+          state: issuesState,
           page,
           per_page: offset,
         },
@@ -61,14 +64,15 @@ export default class Repository extends Component {
     });
   }
 
-  loadder = async (page) => {
+  handlePageChange = async (page) => {
     this.setState({ page, loading: true, issues: [] });
 
-    const { offset, repoName } = this.state;
+    const { offset, repoName, issueState } = this.state;
 
     const issues = await api.get(`/repos/${repoName}/issues`, {
       params: {
-        state: 'all',
+        markdown: true,
+        state: issueState,
         page,
         per_page: offset,
       },
@@ -77,8 +81,21 @@ export default class Repository extends Component {
     this.setState({ loading: false, issues: issues.data });
   };
 
-  handlePageChange = async (page) => {
-    await this.loadder(page);
+  handleIssuesStateChange = async (issueState) => {
+    this.setState({ page: 1, issueState, loading: true, issues: [] });
+
+    const { page, offset, repoName } = this.state;
+
+    const issues = await api.get(`/repos/${repoName}/issues`, {
+      params: {
+        markdown: true,
+        state: issueState,
+        page,
+        per_page: offset,
+      },
+    });
+
+    this.setState({ loading: false, issues: issues.data });
   };
 
   render() {
@@ -121,6 +138,7 @@ export default class Repository extends Component {
           </GoBackButton>
         </Owner>
         <Divider />
+        <IssuesFilter func={this.handleIssuesStateChange} />
         <IssuesList>
           {issues.map((issue) => (
             <li key={issue.id}>
