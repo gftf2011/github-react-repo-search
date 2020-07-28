@@ -2,10 +2,12 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
+import { PaginationList, CurrentItem, PreviousItem, NextItem } from './styles';
+
 const Pagination = ({ page, offset, totalItems, func }) => {
   return (
-    <ul>
-      <li>
+    <PaginationList>
+      <PreviousItem>
         {page > 1 && (
           <button
             type="button"
@@ -17,9 +19,9 @@ const Pagination = ({ page, offset, totalItems, func }) => {
             <FaChevronLeft />
           </button>
         )}
-      </li>
-      <li>{page}</li>
-      <li>
+      </PreviousItem>
+      <CurrentItem>{page}</CurrentItem>
+      <NextItem>
         {page * offset < totalItems && (
           <button
             type="button"
@@ -31,8 +33,8 @@ const Pagination = ({ page, offset, totalItems, func }) => {
             <FaChevronRight />
           </button>
         )}
-      </li>
-    </ul>
+      </NextItem>
+    </PaginationList>
   );
 };
 
